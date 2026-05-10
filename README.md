@@ -12,6 +12,19 @@ A **plug-and-play Cloudflare Worker** that exposes the HouseCall Pro API as an M
 - ✅ **Auto-deploy** — push to main → live in ~30-60s
 - ✅ **Zero infrastructure** — runs on Cloudflare's free tier
 
+## New User? Start Here 👋
+
+**If you have zero experience with GitHub, Cloudflare, or APIs:** Point Claude at [`SETUP_ZERO_KNOWLEDGE.md`](SETUP_ZERO_KNOWLEDGE.md) and Claude will walk you through the entire setup step-by-step. No prior knowledge required.
+
+```
+Point Claude at this repo, then say:
+"Walk me through SETUP_ZERO_KNOWLEDGE.md and help me deploy this"
+```
+
+Claude will guide you to create accounts, fork the repo, set up Cloudflare, and connect it all together.
+
+---
+
 ## Quick Start
 
 ### 1. Fork this repo to your GitHub account
