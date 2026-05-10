@@ -1,0 +1,29 @@
+# Cloudflare
+.wrangler/
+wrangler.lock
+*.wrangler.toml.local
+build/
+dist/
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+.npmrc
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
