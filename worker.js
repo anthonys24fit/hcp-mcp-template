@@ -406,10 +406,18 @@ export default {
 
     // Health check
     if (request.method === "GET" && (path === "/" || path === "")) {
-      return new Response(
-        `HCP MCP Worker v${VERSION} — ${TOOLS.length} tools | /mcp | /webhook`,
-        { status: 200, headers: { "Content-Type": "text/plain", ...CORS } }
-      );
+      const message = `HCP MCP Worker v${VERSION} — ${TOOLS.length} tools | /mcp | /webhook
+
+Next steps:
+1. Point Claude to: ${request.url.replace(/\/$/, "")}/mcp
+2. Claude will read SETUP_ZERO_KNOWLEDGE.md and guide you through setup
+
+Need help? Point Claude at the GitHub repo and say:
+"Walk me through SETUP_ZERO_KNOWLEDGE.md"`;
+      return new Response(message, {
+        status: 200,
+        headers: { "Content-Type": "text/plain", ...CORS },
+      });
     }
 
     // MCP endpoint
