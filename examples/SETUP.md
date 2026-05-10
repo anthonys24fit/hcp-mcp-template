@@ -58,7 +58,7 @@ curl https://your-worker.workers.dev/
 
 You should see:
 ```
-HCP MCP Worker v1.0.0 — 6 tools | /mcp | /webhook
+HCP MCP Worker v1.0.0 — 104 tools | /mcp | /webhook
 ```
 
 ## Step 6 (Optional): Add webhook support

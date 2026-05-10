@@ -1,13 +1,13 @@
 # HouseCall Pro MCP Worker
 
-A **plug-and-play Cloudflare Worker** that exposes the HouseCall Pro API as an MCP (Model Context Protocol) server. Point Claude or any MCP client to this worker and get instant access to 6+ HCP tools—or customize it with your own.
+A **plug-and-play Cloudflare Worker** that exposes the HouseCall Pro API as an MCP (Model Context Protocol) server. Point Claude or any MCP client to this worker and get instant access to all 104 HCP tools—fully production-ready.
 
 **Auto-deploys on push** via Cloudflare Workers Builds (git-connect). No manual paste-to-dashboard steps.
 
 ## Features
 
 - ✅ **MCP-compliant** — works with Claude, LLMs, and any MCP client
-- ✅ **6+ core tools** — list/create customers & jobs (easily extensible)
+- ✅ **104 tools** — complete HCP API coverage (customers, jobs, estimates, invoices, leads, and more)
 - ✅ **Webhook receiver** — validates HMAC-SHA256, ready to store events
 - ✅ **Auto-deploy** — push to main → live in ~30-60s
 - ✅ **Zero infrastructure** — runs on Cloudflare's free tier
@@ -47,7 +47,7 @@ Save & deploy.
 
 ```bash
 curl https://your-worker.workers.dev/
-# → "HCP MCP Worker v1.0.0 — 6 tools | /mcp | /webhook"
+# → "HCP MCP Worker v1.0.0 — 104 tools | /mcp | /webhook"
 ```
 
 ## Routes
@@ -61,14 +61,19 @@ curl https://your-worker.workers.dev/
 
 ## Tools
 
-Out of the box, you get:
+All 104 HouseCall Pro API tools are included, organized by resource:
 
-- `list_customers` — search customers
-- `get_customer` — fetch one customer
-- `create_customer` — add a new customer
-- `list_jobs` — search jobs
-- `get_job` — fetch one job
-- `create_job` — create a new job
+**Customers:** list, get, create, update, address management, memberships  
+**Employees:** list, get  
+**Jobs:** list, get, create, update, dispatch, lock, schedule, appointments, notes, tags, links, attachments, line items, input materials, invoices  
+**Estimates:** list, get, create, update, options (approve/decline/notes/line items/attachments/schedule)  
+**Invoices:** list, get by ID/UUID, preview  
+**Leads:** list, get, create, convert, line items, lead sources  
+**Tags:** list, create, update  
+**Job Types:** list, create, update  
+**Pricebook:** services, materials (create/update/delete), material categories, price forms  
+**Scheduling:** events, scheduled events, booking windows, routes, service zones, schedule availability  
+**Company:** get info, update franchise info, pipeline statuses, checklists, applications, service plans, webhooks
 
 ## Add Custom Tools
 
