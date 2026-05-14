@@ -1,16 +1,33 @@
 # HouseCall Pro MCP Worker — Cloudflare configuration
 #
-# This worker is deployed via Cloudflare Workers Builds (git-connect).
+# Deployed via Cloudflare Workers Builds (git-connect).
 # Commits to your repo's main branch auto-trigger deployments.
 #
-# Secrets (HCP_API_KEY, HCP_WEBHOOK_SECRET) are managed in the
-# Cloudflare dashboard (Settings → Variables and Secrets).
+# IMPORTANT: KV namespaces MUST be declared here, not just in the Cloudflare
+# dashboard. Wrangler treats this file as the source of truth for bindings —
+# anything only configured in the dashboard gets removed on the next deploy.
+#
+# Secrets (HCP_API_KEY, HCP_WEBHOOK_SECRET, ZAPIER_URL) stay in the dashboard
+# under Settings → Variables and Secrets. Wrangler does not wipe secrets.
+#
+# SETUP REQUIRED: Replace the two placeholder KV IDs below with your real IDs.
+# See README.md → "KV Namespaces" for how to create them.
 
-name = "hcp-mcp"
+name = "your-hcp-mcp-worker"
 main = "worker.js"
-compatibility_date = "2026-05-09"
+compatibility_date = "2026-05-10"
 
-# Optional: Add KV namespace for activity/webhook storage
-# [[kv_namespaces]]
-# binding = "HCP_ACTIVITY"
-# id = "your-kv-namespace-id-here"
+# KV namespace for webhook activity storage (48h TTL per event)
+# Create this in Cloudflare dashboard → KV → Create namespace → name it anything
+# Then paste the namespace ID below.
+[[kv_namespaces]]
+binding = "ACTIVITY_KV"
+id = "YOUR_ACTIVITY_KV_ID"
+
+# KV namespace for MCP access tokens (read/write tiers)
+# Create this in Cloudflare dashboard → KV → Create namespace → name it anything
+# Then paste the namespace ID below.
+# After deploying, add token entries: key = your-token-string, value = {"name":"Your Name","tier":"write"}
+[[kv_namespaces]]
+binding = "MCP_TOKENS"
+id = "YOUR_MCP_TOKENS_KV_ID"
