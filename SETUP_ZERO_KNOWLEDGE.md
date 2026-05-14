@@ -58,7 +58,40 @@ You're setting up a bridge between Claude and your HouseCall Pro account. At the
 
 ---
 
-## Step 4: Connect GitHub to Cloudflare (Auto-Deploy)
+## Step 4: Create Two KV Namespaces
+
+**What are KV namespaces?** They're tiny databases inside Cloudflare. This worker needs two: one to store webhook activity, one to store your access tokens.
+
+**Do this:**
+
+1. **In Cloudflare dashboard**, look for **"KV"** in the left sidebar (under "Storage & Databases")
+2. Click **"Create namespace"**
+3. Name it `hcp-activity` → click **"Add"**
+4. **Copy the ID** that appears next to it — it looks like `a1b2c3d4e5f67890abcdef1234567890`. Paste it somewhere safe.
+5. Click **"Create namespace"** again
+6. Name it `hcp-tokens` → click **"Add"**
+7. **Copy that ID too** — paste it somewhere safe
+
+**Now update wrangler.toml in your fork:**
+
+1. Go to your fork on GitHub (`YOUR_USERNAME/hcp-mcp-template`)
+2. Click `wrangler.toml` → click the pencil icon to edit
+3. Find these two lines:
+   ```
+   id = "YOUR_ACTIVITY_KV_ID"
+   ```
+   and
+   ```
+   id = "YOUR_MCP_TOKENS_KV_ID"
+   ```
+4. Replace each placeholder with the real ID you copied above
+5. Scroll down and click **"Commit changes"**
+
+**Expected outcome:** `wrangler.toml` now has your real KV namespace IDs.
+
+---
+
+## Step 5: Connect GitHub to Cloudflare (Auto-Deploy)
 
 **What we're doing:** We're telling Cloudflare to watch your GitHub fork. Every time you push a change, Cloudflare automatically deploys it.
 
@@ -82,7 +115,7 @@ You're setting up a bridge between Claude and your HouseCall Pro account. At the
 
 ---
 
-## Step 5: Get Your HouseCall Pro API Key
+## Step 6: Get Your HouseCall Pro API Key
 
 **What is an API key?** It's a secret password that lets the worker talk to HouseCall Pro on your behalf.
 
@@ -98,19 +131,19 @@ You're setting up a bridge between Claude and your HouseCall Pro account. At the
 
 ---
 
-## Step 6: Add Your API Key to Cloudflare
+## Step 7: Add Your API Key to Cloudflare
 
 **What we're doing:** We're telling your worker the secret API key so it can talk to HouseCall Pro.
 
 **Do this:**
 
 1. **In Cloudflare**, go to **"Workers"** (left sidebar)
-2. Click on **"hcp-mcp-template"** (your worker name)
+2. Click on your worker name
 3. Go to **"Settings"** → **"Variables and Secrets"**
 4. Under **"Secrets"**, click **"Add"**
 5. Enter:
    - **Variable name:** `HCP_API_KEY`
-   - **Value:** (paste your token from Step 5)
+   - **Value:** (paste your token from Step 6)
 6. Click **"Save and Deploy"**
 7. Wait ~30 seconds
 
@@ -118,29 +151,50 @@ You're setting up a bridge between Claude and your HouseCall Pro account. At the
 
 ---
 
-## Step 7: Test Your Worker
+## Step 8: Create Your First MCP Access Token
+
+**What we're doing:** This worker requires a token to use. You'll create one now and use it when connecting Claude.
+
+**Do this:**
+
+1. **In Cloudflare**, go to **"KV"** (left sidebar)
+2. Click on your `hcp-tokens` namespace
+3. Click **"Add entry"**
+4. Enter:
+   - **Key:** make up any string — this IS your token, e.g. `my-hcp-token-2026`
+   - **Value:** `{"name":"Your Name","tier":"write"}`
+5. Click **"Add entry"**
+
+**Expected outcome:** You see your token key listed in the namespace.
+
+> **Tip:** You can create multiple tokens — one for each person or tool that connects. Give each a different key and name. To revoke access, just delete the entry.
+
+---
+
+## Step 9: Test Your Worker
 
 **What we're doing:** Making sure everything works before we connect Claude.
 
 **Do this:**
 
 1. Open a new browser tab
-2. Paste your worker URL (from Step 4) into the address bar and press Enter
+2. Paste your worker URL (from Step 5) into the address bar and press Enter
 3. You should see:
    ```
-   HCP MCP Worker v1.0.0 — 104 tools | /mcp | /webhook
+   HouseCall Pro MCP Worker v3.3.1 — 93 tools | /mcp | /webhook | /activity | /dashboard
    ```
 
-**If you see that:** Success! Go to Step 8.
+**If you see that:** Success! Go to Step 10.
 
-**If you get an error:** 
+**If you get an error:**
 - Wait 30 seconds and refresh
-- Check that `HCP_API_KEY` is in Cloudflare Secrets (Step 6)
+- Check that `HCP_API_KEY` is in Cloudflare Secrets (Step 7)
+- Check that both KV namespace IDs are in `wrangler.toml` (Step 4)
 - Ask Claude for help with the error message
 
 ---
 
-## Step 8: Connect Claude to Your Worker
+## Step 10: Connect Claude to Your Worker
 
 **What we're doing:** Telling Claude where your worker is so it can call HCP tools.
 
@@ -149,7 +203,11 @@ You're setting up a bridge between Claude and your HouseCall Pro account. At the
 1. In Claude (on claude.ai or Claude Code), look for **"MCP Servers"** or **"Connectors"**
 2. Click **"Add Server"** or **"Add Connector"**
 3. Select **"Enter custom URL"**
-4. Paste your worker URL: `https://YOUR_WORKER_URL/mcp`
+4. Paste your worker URL **with your token appended:**
+   ```
+   https://YOUR_WORKER_URL/mcp?token=my-hcp-token-2026
+   ```
+   (use the token key you created in Step 8)
 5. Give it a name: "HCP" or "HouseCall Pro"
 6. Click **"Connect"**
 
@@ -157,7 +215,7 @@ You're setting up a bridge between Claude and your HouseCall Pro account. At the
 
 ---
 
-## Step 9: Start Using It
+## Step 11: Start Using It
 
 Now you can talk to Claude like this:
 
@@ -173,8 +231,13 @@ Claude will call your worker, which calls HouseCall Pro, and brings the results 
 
 ## Troubleshooting
 
-### "Unauthorized" error
-- Check that `HCP_API_KEY` is saved in Cloudflare (Step 6)
+### "Unauthorized" on MCP calls
+- Make sure your MCP URL includes `?token=YOUR_TOKEN` (Step 10)
+- Check that the token key exists in the `hcp-tokens` KV namespace (Step 8)
+- Check that the KV value is exactly `{"name":"...","tier":"write"}` — valid JSON, no typos
+
+### "Unauthorized" on HCP API calls
+- Check that `HCP_API_KEY` is saved in Cloudflare (Step 7)
 - Check that you copied the entire token (no extra spaces)
 - Re-copy your token from HouseCall Pro and update it in Cloudflare
 
