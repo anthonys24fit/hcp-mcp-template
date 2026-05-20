@@ -1,7 +1,11 @@
 /**
- * HouseCall Pro MCP Worker v3.3.1
+ * HouseCall Pro MCP Worker v3.3.3
  * Documented API only (93 tools) + Webhook receiver + Activity feed + Dashboard v2.5
  *
+ * v3.3.3: Fix create_job_appointment + update_job_appointment — remap scheduled_start/end
+ *         to start_time/end_time (correct HCP API field names). Caught by smoke test.
+ * v3.3.2: Fix create_job_appointment + update_job_appointment — remap assigned_employee_ids
+ *         to dispatched_employees_ids (correct HCP API field name).
  * v3.3.1: Inline PNG icon using correct MCP spec 2025-11-25 format — mimeType,
  *         sizes as array, image/png data URI. Prior attempt used wrong field names.
  *
@@ -375,8 +379,8 @@ async function callTool(name, args, apiKey) {
     case "update_job_schedule": { const { job_id, ...b } = args; return c("PUT", `/jobs/${job_id}/schedule`, b); }
     case "delete_job_schedule": return c("DELETE", `/jobs/${args.job_id}/schedule`);
     case "list_job_appointments": return c("GET", `/jobs/${args.job_id}/appointments`);
-    case "create_job_appointment": { const { job_id, ...b } = args; return c("POST", `/jobs/${job_id}/appointments`, b); }
-    case "update_job_appointment": { const { job_id, appointment_id, ...b } = args; return c("PUT", `/jobs/${job_id}/appointments/${appointment_id}`, b); }
+    case "create_job_appointment": { const { job_id, assigned_employee_ids, scheduled_start, scheduled_end, arrival_window_minutes, ...b } = args; if (assigned_employee_ids) b.dispatched_employees_ids = assigned_employee_ids; if (scheduled_start) b.start_time = scheduled_start; if (scheduled_end) b.end_time = scheduled_end; if (arrival_window_minutes) b.arrival_window_minutes = arrival_window_minutes; return c("POST", `/jobs/${job_id}/appointments`, b); }
+    case "update_job_appointment": { const { job_id, appointment_id, assigned_employee_ids, scheduled_start, scheduled_end, arrival_window_minutes, ...b } = args; if (assigned_employee_ids) b.dispatched_employees_ids = assigned_employee_ids; if (scheduled_start) b.start_time = scheduled_start; if (scheduled_end) b.end_time = scheduled_end; if (arrival_window_minutes) b.arrival_window_minutes = arrival_window_minutes; return c("PUT", `/jobs/${job_id}/appointments/${appointment_id}`, b); }
     case "delete_job_appointment": { const { job_id, appointment_id, ...b } = args; return c("DELETE", `/jobs/${job_id}/appointments/${appointment_id}${qs(b)}`); }
     case "create_job_note": return c("POST", `/jobs/${args.job_id}/notes`, { content: args.content });
     case "delete_job_note": return c("DELETE", `/jobs/${args.job_id}/notes/${args.note_id}`);
@@ -526,7 +530,7 @@ async function handleMCP(request, env) {
   }
 
   if (request.method === "GET") {
-    return new Response(JSON.stringify({ name: "HouseCall Pro", version: "3.3.1", protocolVersion: "2025-03-26", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] }), { headers: { "Content-Type": "application/json", ...CORS } });
+    return new Response(JSON.stringify({ name: "HouseCall Pro", version: "3.3.3", protocolVersion: "2025-03-26", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] }), { headers: { "Content-Type": "application/json", ...CORS } });
   }
   let msg;
   try { msg = await request.json(); } catch { return mcpErr(null, -32700, "Parse error"); }
@@ -534,7 +538,7 @@ async function handleMCP(request, env) {
   try {
     switch (method) {
       case "initialize":
-        return mcpJson(id, { protocolVersion: "2025-03-26", capabilities: { tools: {} }, serverInfo: { name: "HouseCall Pro", version: "3.3.1", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] } });
+        return mcpJson(id, { protocolVersion: "2025-03-26", capabilities: { tools: {} }, serverInfo: { name: "HouseCall Pro", version: "3.3.3", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] } });
       case "notifications/initialized":
         return new Response(null, { status: 204, headers: CORS });
       case "ping":
@@ -546,7 +550,7 @@ async function handleMCP(request, env) {
         if (readOnly) {
           const toolDef = TOOLS.find(t => t.name === name);
           if (toolDef && !toolDef.annotations?.readOnlyHint) {
-            return mcpJson(id, { content: [{ type: "text", text: `Access denied: '${name}' requires write access. Contact Kyle to upgrade your token tier.` }], isError: true });
+            return mcpJson(id, { content: [{ type: "text", text: `Access denied: '${name}' requires write access. Contact your admin to upgrade your token tier.` }], isError: true });
           }
         }
         let result;
@@ -690,35 +694,36 @@ input:checked+.slider:before{transform:translateX(16px)}
 </div>
 <div class="slabel">Field staff</div>
 <div class="trow">
-  <div class="tc" id="tc-kevin" onclick="showTech('kevin')">
-    <div class="th"><div class="av" style="background:#e0f2f1;color:#00695c">KM</div><div><div class="tn">Kevin Mariluz</div><div class="ts">Installer</div></div></div>
-    <div class="pill p-idle" id="pill-kevin">Idle</div>
-    <div class="td" id="det-kevin">No recent activity</div>
-    <div class="tt" id="tim-kevin"></div>
+  <!-- Sample team panel. Edit names/roles/colors here AND in TINFO/TIDS/TECH_ORDER below to match your crew. -->
+  <div class="tc" id="tc-tech1" onclick="showTech('tech1')">
+    <div class="th"><div class="av" style="background:#e0f2f1;color:#00695c">T1</div><div><div class="tn">Technician One</div><div class="ts">Installer</div></div></div>
+    <div class="pill p-idle" id="pill-tech1">Idle</div>
+    <div class="td" id="det-tech1">No recent activity</div>
+    <div class="tt" id="tim-tech1"></div>
   </div>
-  <div class="tc" id="tc-michael" onclick="showTech('michael')">
-    <div class="th"><div class="av" style="background:#e0f2f1;color:#00695c">MM</div><div><div class="tn">Michael Mariluz</div><div class="ts">Installer</div></div></div>
-    <div class="pill p-idle" id="pill-michael">Idle</div>
-    <div class="td" id="det-michael">No recent activity</div>
-    <div class="tt" id="tim-michael"></div>
+  <div class="tc" id="tc-tech2" onclick="showTech('tech2')">
+    <div class="th"><div class="av" style="background:#e0f2f1;color:#00695c">T2</div><div><div class="tn">Technician Two</div><div class="ts">Installer</div></div></div>
+    <div class="pill p-idle" id="pill-tech2">Idle</div>
+    <div class="td" id="det-tech2">No recent activity</div>
+    <div class="tt" id="tim-tech2"></div>
   </div>
-  <div class="tc" id="tc-chris" onclick="showTech('chris')">
-    <div class="th"><div class="av" style="background:#e8f5e9;color:#2e7d32">CS</div><div><div class="tn">Chris Sylvester</div><div class="ts">Technician</div></div></div>
-    <div class="pill p-idle" id="pill-chris">Idle</div>
-    <div class="td" id="det-chris">No recent activity</div>
-    <div class="tt" id="tim-chris"></div>
+  <div class="tc" id="tc-tech3" onclick="showTech('tech3')">
+    <div class="th"><div class="av" style="background:#e8f5e9;color:#2e7d32">T3</div><div><div class="tn">Technician Three</div><div class="ts">Service Tech</div></div></div>
+    <div class="pill p-idle" id="pill-tech3">Idle</div>
+    <div class="td" id="det-tech3">No recent activity</div>
+    <div class="tt" id="tim-tech3"></div>
   </div>
-  <div class="tc" id="tc-charles" onclick="showTech('charles')">
-    <div class="th"><div class="av" style="background:#fce4ec;color:#880d4f">CS</div><div><div class="tn">Charles Sessions</div><div class="ts">Comfort Advisor</div></div></div>
-    <div class="pill p-idle" id="pill-charles">Idle</div>
-    <div class="td" id="det-charles">No recent activity</div>
-    <div class="tt" id="tim-charles"></div>
+  <div class="tc" id="tc-tech4" onclick="showTech('tech4')">
+    <div class="th"><div class="av" style="background:#fce4ec;color:#880d4f">T4</div><div><div class="tn">Technician Four</div><div class="ts">Sales</div></div></div>
+    <div class="pill p-idle" id="pill-tech4">Idle</div>
+    <div class="td" id="det-tech4">No recent activity</div>
+    <div class="tt" id="tim-tech4"></div>
   </div>
-  <div class="tc" id="tc-kyle" onclick="showTech('kyle')">
-    <div class="th"><div class="av" style="background:#fff3e0;color:#e65100">KR</div><div><div class="tn">Kyle Ricciardi</div><div class="ts">Owner</div></div></div>
-    <div class="pill p-idle" id="pill-kyle">Idle</div>
-    <div class="td" id="det-kyle">No recent activity</div>
-    <div class="tt" id="tim-kyle"></div>
+  <div class="tc" id="tc-tech5" onclick="showTech('tech5')">
+    <div class="th"><div class="av" style="background:#fff3e0;color:#e65100">T5</div><div><div class="tn">Technician Five</div><div class="ts">Owner</div></div></div>
+    <div class="pill p-idle" id="pill-tech5">Idle</div>
+    <div class="td" id="det-tech5">No recent activity</div>
+    <div class="tt" id="tim-tech5"></div>
   </div>
 </div>
 <div class="stats">
@@ -750,9 +755,11 @@ input:checked+.slider:before{transform:translateX(16px)}
 <script>
 var W='/activity?limit=50';
 var POLL_INTERVAL=60;
-var TIDS={'pro_ec4d77d9c40041008a60ef8de15ad627':'kevin','pro_0fb8e7cb670d4050919cafe11fc4827e':'michael','pro_9f54f8b3ae42426990bd9778d31f015e':'chris','pro_2ca5ac5b46db4dffa366e6f5002203c9':'charles','pro_357b1d4f3f5c4866956eab6109c0ec93':'kyle'};
-var TINFO={kevin:{name:'Kevin Mariluz',role:'Installer',bg:'#e0f2f1',color:'#00695c',init:'KM'},michael:{name:'Michael Mariluz',role:'Installer',bg:'#e0f2f1',color:'#00695c',init:'MM'},chris:{name:'Chris Sylvester',role:'Technician',bg:'#e8f5e9',color:'#2e7d32',init:'CS'},charles:{name:'Charles Sessions',role:'Comfort Advisor',bg:'#fce4ec',color:'#880d4f',init:'CS'},kyle:{name:'Kyle Ricciardi',role:'Owner',bg:'#fff3e0',color:'#e65100',init:'KR'}};
-var TECH_ORDER=['kevin','michael','chris','charles','kyle'];
+// REPLACE the pro_REPLACE_ME_* keys with your real HCP technician IDs (GET /employees from HCP API).
+// Keep the value strings (tech1..tech5) in sync with TINFO keys, TECH_ORDER, and the dashboard HTML above.
+var TIDS={'pro_REPLACE_ME_TECH1':'tech1','pro_REPLACE_ME_TECH2':'tech2','pro_REPLACE_ME_TECH3':'tech3','pro_REPLACE_ME_TECH4':'tech4','pro_REPLACE_ME_TECH5':'tech5'};
+var TINFO={tech1:{name:'Technician One',role:'Installer',bg:'#e0f2f1',color:'#00695c',init:'T1'},tech2:{name:'Technician Two',role:'Installer',bg:'#e0f2f1',color:'#00695c',init:'T2'},tech3:{name:'Technician Three',role:'Service Tech',bg:'#e8f5e9',color:'#2e7d32',init:'T3'},tech4:{name:'Technician Four',role:'Sales',bg:'#fce4ec',color:'#880d4f',init:'T4'},tech5:{name:'Technician Five',role:'Owner',bg:'#fff3e0',color:'#e65100',init:'T5'}};
+var TECH_ORDER=['tech1','tech2','tech3','tech4','tech5'];
 var EMAP={
   'job.on_my_way':{key:'omw',pri:'high',label:'On the way'},
   'job.canceled':{key:'canceled',pri:'high',label:'Canceled'},
@@ -1182,6 +1189,6 @@ export default {
     if (url.pathname === "/dashboard") {
       return new Response(getDashboardHTML(), { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0" } });
     }
-    return new Response(`HouseCall Pro MCP Worker v3.3.1 — ${TOOLS.length} tools | /mcp | /webhook | /activity | /dashboard`, { status: 200, headers: CORS });
+    return new Response(`HouseCall Pro MCP Worker v3.3.3 — ${TOOLS.length} tools | /mcp | /webhook | /activity | /dashboard`, { status: 200, headers: CORS });
   },
 };
