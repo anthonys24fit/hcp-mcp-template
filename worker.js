@@ -679,32 +679,33 @@ input:checked+.slider:before{transform:translateX(16px)}
 </div>
 <div class="slabel">Field staff</div>
 <div class="trow">
+  <!-- Sample team panel. Edit names/roles/colors here AND in TINFO/TIDS/TECH_ORDER below to match your crew. -->
   <div class="tc" id="tc-tech1" onclick="showTech('tech1')">
-    <div class="th"><div class="av" style="background:#e0f2f1;color:#00695c">KM</div><div><div class="tn">Technician One</div><div class="ts">Installer</div></div></div>
+    <div class="th"><div class="av" style="background:#e0f2f1;color:#00695c">T1</div><div><div class="tn">Technician One</div><div class="ts">Installer</div></div></div>
     <div class="pill p-idle" id="pill-tech1">Idle</div>
     <div class="td" id="det-tech1">No recent activity</div>
     <div class="tt" id="tim-tech1"></div>
   </div>
   <div class="tc" id="tc-tech2" onclick="showTech('tech2')">
-    <div class="th"><div class="av" style="background:#e0f2f1;color:#00695c">MM</div><div><div class="tn">Technician Two</div><div class="ts">Installer</div></div></div>
+    <div class="th"><div class="av" style="background:#e0f2f1;color:#00695c">T2</div><div><div class="tn">Technician Two</div><div class="ts">Installer</div></div></div>
     <div class="pill p-idle" id="pill-tech2">Idle</div>
     <div class="td" id="det-tech2">No recent activity</div>
     <div class="tt" id="tim-tech2"></div>
   </div>
   <div class="tc" id="tc-tech3" onclick="showTech('tech3')">
-    <div class="th"><div class="av" style="background:#e8f5e9;color:#2e7d32">CS</div><div><div class="tn">Technician Three</div><div class="ts">Technician</div></div></div>
+    <div class="th"><div class="av" style="background:#e8f5e9;color:#2e7d32">T3</div><div><div class="tn">Technician Three</div><div class="ts">Service Tech</div></div></div>
     <div class="pill p-idle" id="pill-tech3">Idle</div>
     <div class="td" id="det-tech3">No recent activity</div>
     <div class="tt" id="tim-tech3"></div>
   </div>
   <div class="tc" id="tc-tech4" onclick="showTech('tech4')">
-    <div class="th"><div class="av" style="background:#fce4ec;color:#880d4f">CS</div><div><div class="tn">Technician Four</div><div class="ts">Comfort Advisor</div></div></div>
+    <div class="th"><div class="av" style="background:#fce4ec;color:#880d4f">T4</div><div><div class="tn">Technician Four</div><div class="ts">Sales</div></div></div>
     <div class="pill p-idle" id="pill-tech4">Idle</div>
     <div class="td" id="det-tech4">No recent activity</div>
     <div class="tt" id="tim-tech4"></div>
   </div>
   <div class="tc" id="tc-tech5" onclick="showTech('tech5')">
-    <div class="th"><div class="av" style="background:#fff3e0;color:#e65100">KR</div><div><div class="tn">Technician Five</div><div class="ts">Owner</div></div></div>
+    <div class="th"><div class="av" style="background:#fff3e0;color:#e65100">T5</div><div><div class="tn">Technician Five</div><div class="ts">Owner</div></div></div>
     <div class="pill p-idle" id="pill-tech5">Idle</div>
     <div class="td" id="det-tech5">No recent activity</div>
     <div class="tt" id="tim-tech5"></div>
@@ -739,8 +740,10 @@ input:checked+.slider:before{transform:translateX(16px)}
 <script>
 var W='/activity?limit=50';
 var POLL_INTERVAL=60;
+// REPLACE the pro_REPLACE_ME_* keys with your real HCP technician IDs (GET /employees from HCP API).
+// Keep the value strings (tech1..tech5) in sync with TINFO keys, TECH_ORDER, and the dashboard HTML above.
 var TIDS={'pro_REPLACE_ME_TECH1':'tech1','pro_REPLACE_ME_TECH2':'tech2','pro_REPLACE_ME_TECH3':'tech3','pro_REPLACE_ME_TECH4':'tech4','pro_REPLACE_ME_TECH5':'tech5'};
-var TINFO={tech1:{name:'Technician One',role:'Installer',bg:'#e0f2f1',color:'#00695c',init:'KM'},tech2:{name:'Technician Two',role:'Installer',bg:'#e0f2f1',color:'#00695c',init:'MM'},tech3:{name:'Technician Three',role:'Technician',bg:'#e8f5e9',color:'#2e7d32',init:'CS'},tech4:{name:'Technician Four',role:'Comfort Advisor',bg:'#fce4ec',color:'#880d4f',init:'CS'},tech5:{name:'Technician Five',role:'Owner',bg:'#fff3e0',color:'#e65100',init:'KR'}};
+var TINFO={tech1:{name:'Technician One',role:'Installer',bg:'#e0f2f1',color:'#00695c',init:'T1'},tech2:{name:'Technician Two',role:'Installer',bg:'#e0f2f1',color:'#00695c',init:'T2'},tech3:{name:'Technician Three',role:'Service Tech',bg:'#e8f5e9',color:'#2e7d32',init:'T3'},tech4:{name:'Technician Four',role:'Sales',bg:'#fce4ec',color:'#880d4f',init:'T4'},tech5:{name:'Technician Five',role:'Owner',bg:'#fff3e0',color:'#e65100',init:'T5'}};
 var TECH_ORDER=['tech1','tech2','tech3','tech4','tech5'];
 var EMAP={
   'job.on_my_way':{key:'omw',pri:'high',label:'On the way'},
