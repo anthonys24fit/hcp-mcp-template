@@ -1,7 +1,11 @@
 /**
- * HouseCall Pro MCP Worker v3.3.1
+ * HouseCall Pro MCP Worker v3.3.3
  * Documented API only (93 tools) + Webhook receiver + Activity feed + Dashboard v2.5
  *
+ * v3.3.3: Fix create_job_appointment + update_job_appointment — remap scheduled_start/end
+ *         to start_time/end_time (correct HCP API field names). Caught by smoke test.
+ * v3.3.2: Fix create_job_appointment + update_job_appointment — remap assigned_employee_ids
+ *         to dispatched_employees_ids (correct HCP API field name).
  * v3.3.1: Inline PNG icon using correct MCP spec 2025-11-25 format — mimeType,
  *         sizes as array, image/png data URI. Prior attempt used wrong field names.
  *
@@ -375,8 +379,8 @@ async function callTool(name, args, apiKey) {
     case "update_job_schedule": { const { job_id, ...b } = args; return c("PUT", `/jobs/${job_id}/schedule`, b); }
     case "delete_job_schedule": return c("DELETE", `/jobs/${args.job_id}/schedule`);
     case "list_job_appointments": return c("GET", `/jobs/${args.job_id}/appointments`);
-    case "create_job_appointment": { const { job_id, ...b } = args; return c("POST", `/jobs/${job_id}/appointments`, b); }
-    case "update_job_appointment": { const { job_id, appointment_id, ...b } = args; return c("PUT", `/jobs/${job_id}/appointments/${appointment_id}`, b); }
+    case "create_job_appointment": { const { job_id, assigned_employee_ids, scheduled_start, scheduled_end, arrival_window_minutes, ...b } = args; if (assigned_employee_ids) b.dispatched_employees_ids = assigned_employee_ids; if (scheduled_start) b.start_time = scheduled_start; if (scheduled_end) b.end_time = scheduled_end; if (arrival_window_minutes) b.arrival_window_minutes = arrival_window_minutes; return c("POST", `/jobs/${job_id}/appointments`, b); }
+    case "update_job_appointment": { const { job_id, appointment_id, assigned_employee_ids, scheduled_start, scheduled_end, arrival_window_minutes, ...b } = args; if (assigned_employee_ids) b.dispatched_employees_ids = assigned_employee_ids; if (scheduled_start) b.start_time = scheduled_start; if (scheduled_end) b.end_time = scheduled_end; if (arrival_window_minutes) b.arrival_window_minutes = arrival_window_minutes; return c("PUT", `/jobs/${job_id}/appointments/${appointment_id}`, b); }
     case "delete_job_appointment": { const { job_id, appointment_id, ...b } = args; return c("DELETE", `/jobs/${job_id}/appointments/${appointment_id}${qs(b)}`); }
     case "create_job_note": return c("POST", `/jobs/${args.job_id}/notes`, { content: args.content });
     case "delete_job_note": return c("DELETE", `/jobs/${args.job_id}/notes/${args.note_id}`);
@@ -511,7 +515,7 @@ async function handleMCP(request, env) {
   const readOnly = tier !== "write";
 
   if (request.method === "GET") {
-    return new Response(JSON.stringify({ name: "HouseCall Pro", version: "3.3.1", protocolVersion: "2025-03-26", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] }), { headers: { "Content-Type": "application/json", ...CORS } });
+    return new Response(JSON.stringify({ name: "HouseCall Pro", version: "3.3.3", protocolVersion: "2025-03-26", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] }), { headers: { "Content-Type": "application/json", ...CORS } });
   }
   let msg;
   try { msg = await request.json(); } catch { return mcpErr(null, -32700, "Parse error"); }
@@ -519,7 +523,7 @@ async function handleMCP(request, env) {
   try {
     switch (method) {
       case "initialize":
-        return mcpJson(id, { protocolVersion: "2025-03-26", capabilities: { tools: {} }, serverInfo: { name: "HouseCall Pro", version: "3.3.1", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] } });
+        return mcpJson(id, { protocolVersion: "2025-03-26", capabilities: { tools: {} }, serverInfo: { name: "HouseCall Pro", version: "3.3.3", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] } });
       case "notifications/initialized":
         return new Response(null, { status: 204, headers: CORS });
       case "ping":
@@ -1167,6 +1171,6 @@ export default {
     if (url.pathname === "/dashboard") {
       return new Response(getDashboardHTML(), { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0" } });
     }
-    return new Response(`HouseCall Pro MCP Worker v3.3.1 — ${TOOLS.length} tools | /mcp | /webhook | /activity | /dashboard`, { status: 200, headers: CORS });
+    return new Response(`HouseCall Pro MCP Worker v3.3.3 — ${TOOLS.length} tools | /mcp | /webhook | /activity | /dashboard`, { status: 200, headers: CORS });
   },
 };
