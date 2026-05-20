@@ -6,6 +6,6 @@
 # Secrets (HCP_API_KEY, HCP_WEBHOOK_SECRET, ZAPIER_URL) stay in the dashboard
 # under Settings → Variables and Secrets. Wrangler does not wipe secrets.
 
-name = "your-hcp-mcp-worker"
+name = "hcp-mcp-template"
 main = "worker.js"
 compatibility_date = "2026-05-10"
