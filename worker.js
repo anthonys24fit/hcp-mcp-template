@@ -499,16 +499,31 @@ async function handleMCP(request, env) {
       { status: 401, headers: { "Content-Type": "application/json", ...CORS } }
     );
   }
-  const recordStr = env.MCP_TOKENS ? await env.MCP_TOKENS.get(token) : null;
-  if (!recordStr) {
+  // KV-backed token lookup; fall back to single MCP_TOKEN env var when KV is not bound.
+  let userName = "Unknown", tier = "write", readOnly = false;
+  if (env.MCP_TOKENS) {
+    const recordStr = await env.MCP_TOKENS.get(token);
+    if (!recordStr) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: invalid or revoked token." }),
+        { status: 401, headers: { "Content-Type": "application/json", ...CORS } }
+      );
+    }
+    try { ({ name: userName, tier } = JSON.parse(recordStr)); } catch {}
+    readOnly = tier !== "write";
+  } else if (env.MCP_TOKEN) {
+    if (token !== env.MCP_TOKEN) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: invalid token." }),
+        { status: 401, headers: { "Content-Type": "application/json", ...CORS } }
+      );
+    }
+  } else {
     return new Response(
-      JSON.stringify({ error: "Unauthorized: invalid or revoked token." }),
-      { status: 401, headers: { "Content-Type": "application/json", ...CORS } }
+      JSON.stringify({ error: "Server misconfigured: no token store available." }),
+      { status: 500, headers: { "Content-Type": "application/json", ...CORS } }
     );
   }
-  let userName = "Unknown", tier = "read";
-  try { ({ name: userName, tier } = JSON.parse(recordStr)); } catch {}
-  const readOnly = tier !== "write";
 
   if (request.method === "GET") {
     return new Response(JSON.stringify({ name: "HouseCall Pro", version: "3.3.1", protocolVersion: "2025-03-26", description: "HouseCall Pro field service management — customers, jobs, estimates, invoices, pricebook, and dispatch.", icons: [{ src: HCP_ICON, mimeType: HCP_ICON_MIME, sizes: ["any"] }] }), { headers: { "Content-Type": "application/json", ...CORS } });
